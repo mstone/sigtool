@@ -10,12 +10,22 @@
     systems = utils.lib.defaultSystems;
     overlay = (final: prev: {
       sigtool = with final; rec {
+        bintools = prev.bintools.overrideAttrs (old: {
+          postFixup = builtins.replaceStrings ["-no_uuid"] [""] old.postFixup;
+        });
+        cc = prev.stdenv.cc.overrideAttrs (old: {
+          bintools = bintools;
+        });
+        stdenv = prev.overrideCC prev.stdenv cc;
         sigtool = stdenv.mkDerivation {
           inherit name;
           src = self;
-          nativeBuildInputs = [ pkg-config makeWrapper ];
-	  buildInputs = [ openssl ];
-          installFlags = [ "PREFIX=$(out)" ];
+          nativeBuildInputs = [ pkg-config meson ninja ];
+          buildInputs = [ openssl ];
+          dontStrip = true;
+          separateDebugInfo = true;
+          mesonBuildType = "debug";
+          ninjaFlags = "-v";
         };
         defaultPackage = sigtool;
       };
